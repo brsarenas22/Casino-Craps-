@@ -1,0 +1,144 @@
+import random
+
+print(" --- Welcome to Casino Craps!! --- ")
+
+# PLAYER COUNT HANDLER
+def player_count_func():
+    while True:
+        try:
+            player_count = int(input("How many players will be participating in today's game? (1-10): "))
+            if player_count < 1:
+                print("We need at least one player to start the game. Please try again.")
+            elif player_count > 10:
+                print("The player count cannot exceed 10. Sorry!")
+            else:
+                print(f"We've got {player_count} potential winners participating. It's time to collect the bets!")
+                return player_count
+        except ValueError:
+            print("Please enter a number between 1 and 10.")
+
+# PLAYER INFORMATION COLLECTION
+def player_information(player_count, players):
+    for i in range(player_count):
+        name = input(f"Player {i + 1}, please enter your name: ").strip()
+
+        if name not in players:
+            players[name] = {'balance': 1000}  # Default starting balance
+
+        while True:
+            try:
+                print(f"{name}, your current balance is ${players[name]['balance']}.")
+                bet = int(input(f"How much will you bet? ($200 - $1000): "))
+                if bet < 200:
+                    print("Minimum bet is $200. Enter again.")
+                elif bet > 1000:
+                    print("Maximum bet is $1000. Enter again.")
+                elif bet > players[name]['balance']:
+                    print("You don't have enough balance for that bet. Try again.")
+                else:
+                    print(f"Bet accepted: ${bet}")
+                    players[name]['bet'] = bet
+                    players[name]['balance'] -= bet  # Deduct the bet from their balance
+                    break
+            except ValueError:
+                print("Please enter a valid amount.")
+
+        while True:
+            bet_type = input(f"{name}, are you making a 'Pass' or 'Don't Pass' Line bet? ").strip().lower()
+            if bet_type in ["pass", "don't pass"]:
+                print(f"Bet type accepted: {bet_type}")
+                players[name]['type'] = bet_type
+                break
+            else:
+                print("Invalid bet type. Enter 'Pass' or 'Don't Pass'.")
+    return players
+
+# DICE ROLL FUNCTION
+def roll_2d6():
+    d1 = random.randint(1, 6)
+    d2 = random.randint(1, 6)
+    total = d1 + d2
+    print(f"You rolled a {d1} and a {d2} for a combined score of {total}!")
+    return total
+
+# FIRST ROLL HANDLER
+def first_roll():
+    come_out_roll = roll_2d6()
+    if come_out_roll in [7, 11]:
+        print("Congrats! You win!")
+        return True  # Come Out Bets Win
+    elif come_out_roll in [2, 3, 12]:
+        print("Craps... you lose!")
+        return False  # Don't Pass Bets Lose
+    else:
+        print(f"The point is now set to {come_out_roll}")
+        return come_out_roll  # Set the point for further rolls
+
+# POINT ROLL HANDLER
+def point_roll(point):
+    while True:
+        roll = roll_2d6()
+        if roll == point:
+            print(f"You've hit the point {point}! You win!")
+            return True  # Win by hitting the point
+        elif roll == 7:
+            print("You've rolled a 7... You lose!")
+            return False  # Lose by rolling a 7 against the point
+
+# HANDLE PAYOUTS
+def handle_payouts(players, game_result):
+    for name in players:
+        bet = players[name]['bet']
+        bet_type = players[name]['type']
+
+        if (game_result and bet_type == 'pass') or (not game_result and bet_type == "don't pass"):
+            winnings = bet * 2  # Doubles the bet for the winning amount
+            players[name]['balance'] += winnings # Updates the player's running balance
+            print(f"{name} wins ${winnings}! New balance: ${players[name]['balance']}")
+        else:
+            print(f"{name} lost their ${bet} bet! New balance: ${players[name]['balance']}")
+
+# PRINT FINAL BETS
+def final_bets(players):
+    print("\n--- Final Bets ---")
+    for name in players:
+        bet = players[name]['bet']
+        bet_type = players[name]['type']
+        print(f"{name} bet ${bet} on '{bet_type}'.")
+
+# MAIN GAME FUNCTION
+def main():
+    players = {}  # This stores player data across rounds
+
+    while True:  # Game loop
+        player_count = player_count_func()
+        players = player_information(player_count, players)
+
+        print("\n--- Starting the Game! ---")
+        result = first_roll()
+
+        if result is True:
+            game_result = True  # Winning command
+        elif result is False:
+            game_result = False  # Losing command
+        else:
+            print("\n--- Point Roll! ---")
+            game_result = point_roll(result)  # Continues rolling with the point
+
+        print("\n--- Game Over! ---")
+        if game_result:
+            print("Players with 'Pass' bets win!")
+        else:
+            print("Players with 'Don't Pass' bets win!")
+
+        handle_payouts(players, game_result)  # Update player balances
+        final_bets(players)  # Display all the final bets
+
+        # Ask if players want to play again
+        play_again = input("Do you want to play again? (yes/no) ").strip().lower()
+        if play_again != "yes":
+            print("Thanks for playing!")
+            break  # Exit loop
+
+if __name__ == "__main__":
+    main()
